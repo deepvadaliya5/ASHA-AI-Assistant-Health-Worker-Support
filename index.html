@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASHA AI Assistant — Health Worker Support</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<!-- ─── Navbar ─────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="navbar-brand">
+    <div class="logo-icon">⚕️</div>
+    <div>
+      <span data-i18n="navTitle">ASHA AI Assistant</span>
+      <span class="navbar-subtitle" data-i18n="navSubtitle">Health Worker Support System</span>
+    </div>
+  </div>
+  <div class="navbar-actions">
+    <button id="langToggleBtn" class="nav-btn">हिंदी</button>
+    <a href="symptoms.html" class="nav-link-btn">Start Consultation</a>
+    <a href="diagnose.html" class="nav-link-btn">🔬 Diagnose</a>
+    <a href="drugs.html" class="nav-link-btn">💊 Drugs</a>
+    <a href="pregnancy.html" class="nav-link-btn">🤱 ANC</a>
+    <a href="analytics.html" class="nav-link-btn">📊 Analytics</a>
+  </div>
+</nav>
+
+<!-- ─── Hero ───────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">
+      <span>🇮🇳</span> Designed for India's ASHA Health Workers
+    </div>
+
+    <h1 class="hero-title">
+      AI-Powered Health<br><span>Guidance at Your Side</span>
+    </h1>
+
+    <p class="hero-subtitle">
+      Real-time medical guidance grounded in live health research. 
+      Supports English and Hindi. Works hands-free with voice input.
+    </p>
+
+    <div class="hero-actions">
+      <a href="symptoms.html" class="hero-btn primary">🩺 Start Consultation</a>
+      <a href="analytics.html" class="hero-btn secondary">📊 View Analytics</a>
+    </div>
+
+    <div class="features-grid" style="margin-top: 60px;">
+      <div class="feature-card">
+        <div class="feature-icon">🛡️</div>
+        <div class="feature-title">Health Gatekeeper</div>
+        <div class="feature-desc">AI-powered intent classification ensures only medical queries are processed — no off-topic distractions.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <div class="feature-title">Live Web Mining</div>
+        <div class="feature-desc">Dynamically mines Google News in real-time based on reported symptoms for the most current health information.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <div class="feature-title">Semantic Search</div>
+        <div class="feature-desc">Uses Google's text-embedding-004 and Cosine Similarity to surface the most relevant research for each patient.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🚨</div>
+        <div class="feature-title">Action-First Guidance</div>
+        <div class="feature-desc">Always leads with immediate first-aid steps before citing research — optimized for field conditions.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🎙️</div>
+        <div class="feature-title">Voice & Hindi Support</div>
+        <div class="feature-desc">Fully bilingual (English/Hindi) with hands-free voice input and audio response for accessibility.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔬</div>
+        <div class="feature-title">Differential Diagnosis</div>
+        <div class="feature-desc">AI ranks possible conditions with confidence % scores, ICD codes, urgency levels and recommended tests.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💊</div>
+        <div class="feature-title">Drug Interaction Checker</div>
+        <div class="feature-desc">Check if two or more PHC medicines are safe to give together — severity ratings and ASHA-friendly advice.</div>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🤱</div>
+        <div class="feature-title">Pregnancy Risk Screener</div>
+        <div class="feature-desc">Full ANC assessment — BP, Hb, symptoms → risk score, danger signs, referral decision, JSSK/PMSMA schemes.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ─── Government Schemes Section ────────────────────── -->
+<section style="background: var(--clr-surface); padding: 60px 24px; border-top: 1px solid var(--clr-border);">
+  <div class="page-wrapper" style="padding-top: 0; padding-bottom: 0;">
+    <div style="text-align: center; margin-bottom: 36px;">
+      <h2 style="font-family: var(--font-head); font-size: 1.8rem; font-weight: 700;">
+        Key Government Health Schemes
+      </h2>
+      <p style="color: var(--clr-text-2); margin-top: 8px;">ASHA workers cover these critical national programs</p>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+      <div class="card" style="text-align: center; padding: 20px;">
+        <div style="font-size: 1.5rem; margin-bottom: 8px;">👶</div>
+        <div style="font-weight: 700; margin-bottom: 4px;">JSSK</div>
+        <div class="text-sm text-muted">Janani Shishu Suraksha Karyakram</div>
+      </div>
+      <div class="card" style="text-align: center; padding: 20px;">
+        <div style="font-size: 1.5rem; margin-bottom: 8px;">🏥</div>
+        <div style="font-weight: 700; margin-bottom: 4px;">RBSK</div>
+        <div class="text-sm text-muted">Rashtriya Bal Swasthya Karyakram</div>
+      </div>
+      <div class="card" style="text-align: center; padding: 20px;">
+        <div style="font-size: 1.5rem; margin-bottom: 8px;">🩸</div>
+        <div style="font-weight: 700; margin-bottom: 4px;">POSHAN</div>
+        <div class="text-sm text-muted">National Nutrition Mission</div>
+      </div>
+      <div class="card" style="text-align: center; padding: 20px;">
+        <div style="font-size: 1.5rem; margin-bottom: 8px;">💉</div>
+        <div style="font-weight: 700; margin-bottom: 4px;">UIP</div>
+        <div class="text-sm text-muted">Universal Immunization Program</div>
+      </div>
+      <div class="card" style="text-align: center; padding: 20px;">
+        <div style="font-size: 1.5rem; margin-bottom: 8px;">🫁</div>
+        <div style="font-weight: 700; margin-bottom: 4px;">NTEP</div>
+        <div class="text-sm text-muted">National TB Elimination Programme</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script type="module">
+  import { getLang, toggleLang } from "./js/lang.js";
+  document.getElementById("langToggleBtn").textContent = getLang() === "hi" ? "English" : "हिंदी";
+  document.getElementById("langToggleBtn").addEventListener("click", () => {
+    const lang = toggleLang();
+    document.getElementById("langToggleBtn").textContent = lang === "hi" ? "English" : "हिंदी";
+  });
+</script>
+</body>
+</html>

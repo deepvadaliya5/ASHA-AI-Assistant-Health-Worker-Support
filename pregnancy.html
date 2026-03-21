@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Pregnancy Risk Screener — ASHA AI</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .risk-dial {
+      width: 120px; height: 120px; border-radius: 50%;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      font-family: var(--font-head); border: 6px solid;
+      flex-shrink: 0;
+    }
+    .risk-dial .risk-num { font-size: 1.8rem; font-weight: 800; line-height: 1; }
+    .risk-dial .risk-lbl { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .risk-low      { border-color: var(--clr-primary); color: var(--clr-primary); background: var(--clr-primary-lt); }
+    .risk-medium   { border-color: var(--clr-warning); color: var(--clr-warning); background: var(--clr-warning-lt); }
+    .risk-high     { border-color: var(--clr-danger);  color: var(--clr-danger);  background: var(--clr-danger-lt); }
+    .risk-critical { border-color: #7b241c; color: #7b241c; background: #fdecea; animation: pulse 1.2s infinite; }
+    .finding-row { display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px solid var(--clr-border); }
+    .finding-row:last-child { border-bottom:none; }
+    .finding-status { padding:3px 8px; border-radius:100px; font-size:0.7rem; font-weight:700; text-transform:uppercase; flex-shrink:0; }
+    .status-normal { background:var(--clr-primary-lt); color:var(--clr-primary); }
+    .status-low    { background:var(--clr-info-lt);    color:var(--clr-info); }
+    .status-high   { background:var(--clr-danger-lt);  color:var(--clr-danger); }
+    .status-critical { background:var(--clr-danger); color:white; }
+    .danger-sign-card { padding:10px 12px; background:var(--clr-danger-lt); border-left:3px solid var(--clr-danger); border-radius:var(--radius-sm); margin-bottom:8px; }
+    .trimester-bar { display:flex; gap:4px; margin:12px 0; }
+    .trimester-seg { flex:1; height:8px; border-radius:4px; background:var(--clr-border); }
+    .trimester-seg.active { background:var(--clr-primary); }
+    .scheme-chip { display:inline-flex; align-items:center; gap:4px; padding:5px 12px; background:var(--clr-primary-lt); color:var(--clr-primary-dk); border-radius:100px; font-size:0.78rem; font-weight:500; margin:3px; }
+    .vitals-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-brand">
+    <div class="logo-icon">⚕️</div>
+    <div>
+      <span>ASHA AI Assistant</span>
+      <span class="navbar-subtitle">Pregnancy Risk Screener</span>
+    </div>
+  </div>
+  <div class="navbar-actions">
+    <button id="langToggleBtn" class="nav-btn">हिंदी</button>
+    <a href="index.html" class="nav-link-btn">← Home</a>
+    <a href="chat.html" class="nav-link-btn">💬 Chat</a>
+  </div>
+</nav>
+
+<div class="page-wrapper" style="max-width:960px;">
+  <div class="page-header">
+    <h1 class="page-title">🤱 Pregnancy Risk Screener</h1>
+    <p class="page-subtitle">ANC assessment tool — enter mother's details for full risk evaluation and JSSK/PMSMA guidance</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+    <!-- Input Form -->
+    <div>
+      <!-- Patient & Basic Info -->
+      <div class="card mb-4">
+        <div class="card-header"><span>👤</span><span class="card-title">Patient Information</span></div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label class="form-label">Patient ID</label>
+            <input id="pid" class="form-control" placeholder="ASHA-2024-001"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Mother's Age</label>
+            <input id="age" type="number" class="form-control" placeholder="e.g. 24" min="10" max="60"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Gestational Age (weeks)</label>
+          <input id="weeks" type="number" class="form-control" placeholder="e.g. 28" min="1" max="42"/>
+          <div class="trimester-bar" id="trimesterBar">
+            <div class="trimester-seg" id="t1"></div>
+            <div class="trimester-seg" id="t2"></div>
+            <div class="trimester-seg" id="t3"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;" class="text-xs text-muted">
+            <span>1st Trimester (1-13w)</span>
+            <span>2nd (14-27w)</span>
+            <span>3rd (28-42w)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vitals -->
+      <div class="card mb-4">
+        <div class="card-header"><span>🩺</span><span class="card-title">Vitals & Lab Values</span></div>
+        <div class="vitals-grid">
+          <div class="form-group">
+            <label class="form-label">Systolic BP (mmHg)</label>
+            <input id="sys" type="number" class="form-control" placeholder="e.g. 120" min="60" max="250"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Diastolic BP (mmHg)</label>
+            <input id="dia" type="number" class="form-control" placeholder="e.g. 80" min="40" max="150"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Weight (kg)</label>
+            <input id="weight" type="number" class="form-control" placeholder="e.g. 55" min="30" max="150"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Hemoglobin (g/dL)</label>
+            <input id="hb" type="number" step="0.1" class="form-control" placeholder="e.g. 10.5" min="3" max="20"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- Symptoms & History -->
+      <div class="card mb-4">
+        <div class="card-header"><span>🌡️</span><span class="card-title">Current Symptoms</span></div>
+        <div class="symptom-pills" id="sympPills"></div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header"><span>📋</span><span class="card-title">Previous Complications</span></div>
+        <div class="symptom-pills" id="compPills"></div>
+      </div>
+
+      <button class="btn btn-primary btn-lg w-full" id="screenBtn">
+        🤱 Run ANC Risk Assessment
+      </button>
+    </div>
+
+    <!-- Results -->
+    <div>
+      <div id="placeholder" class="card" style="text-align:center;padding:50px 20px;color:var(--clr-text-3);">
+        <div style="font-size:2.5rem;margin-bottom:12px;">🤱</div>
+        <div style="font-weight:600;margin-bottom:6px;">No assessment yet</div>
+        <div class="text-sm">Fill in the form and run assessment</div>
+      </div>
+      <div id="resultsPanel" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { getLang, toggleLang, applyLang } from "./js/lang.js";
+applyLang(getLang());
+document.getElementById("langToggleBtn").textContent = getLang() === "hi" ? "English" : "हिंदी";
+document.getElementById("langToggleBtn").addEventListener("click", () => {
+  const l = toggleLang();
+  document.getElementById("langToggleBtn").textContent = l === "hi" ? "English" : "हिंदी";
+});
+
+const ANC_SYMPTOMS = ["Headache","Blurred vision","Swollen face","Swollen hands","Swollen feet",
+  "Reduced fetal movement","Vaginal bleeding","Severe abdominal pain","Difficulty breathing","Fever","Vomiting"];
+const COMPLICATIONS = ["Previous C-section","Miscarriage","Stillbirth","Pre-eclampsia","Gestational diabetes",
+  "Anemia","Twin pregnancy","Preterm birth","Postpartum hemorrhage"];
+
+let selSymp = new Set();
+let selComp = new Set();
+
+function renderPillGroup(containerId, items, selSet) {
+  const el = document.getElementById(containerId);
+  el.innerHTML = "";
+  items.forEach(s => {
+    const p = document.createElement("button");
+    p.className = "pill" + (selSet.has(s) ? " selected" : "");
+    p.textContent = s;
+    p.onclick = () => { selSet.has(s) ? selSet.delete(s) : selSet.add(s); renderPillGroup(containerId, items, selSet); };
+    el.appendChild(p);
+  });
+}
+
+renderPillGroup("sympPills", ANC_SYMPTOMS, selSymp);
+renderPillGroup("compPills", COMPLICATIONS, selComp);
+
+// Trimester indicator
+document.getElementById("weeks").addEventListener("input", function() {
+  const w = parseInt(this.value) || 0;
+  document.getElementById("t1").classList.toggle("active", w >= 1);
+  document.getElementById("t2").classList.toggle("active", w >= 14);
+  document.getElementById("t3").classList.toggle("active", w >= 28);
+});
+
+document.getElementById("screenBtn").addEventListener("click", async () => {
+  const btn = document.getElementById("screenBtn");
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Assessing...';
+  document.getElementById("placeholder").style.display = "none";
+  document.getElementById("resultsPanel").style.display = "block";
+  document.getElementById("resultsPanel").innerHTML = `<div style="text-align:center;padding:40px;">
+    <div class="spinner" style="width:36px;height:36px;margin:0 auto 16px;"></div>
+    <p class="text-muted">Analyzing ANC data...</p></div>`;
+
+  try {
+    const raw = await fetch("/api/pregnancy-screen", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        patientId: document.getElementById("pid").value,
+        age: document.getElementById("age").value,
+        gestationalWeeks: document.getElementById("weeks").value,
+        systolic: document.getElementById("sys").value,
+        diastolic: document.getElementById("dia").value,
+        weight: document.getElementById("weight").value,
+        hemoglobin: document.getElementById("hb").value,
+        symptoms: [...selSymp],
+        previousComplications: [...selComp],
+        language: getLang()
+      })
+    }).then(r => r.text());
+
+    const data = JSON.parse(raw);
+    if (data.error) throw new Error(data.error);
+
+    const riskClass = `risk-${data.riskLevel || "low"}`;
+    const riskColors = { low:"var(--clr-primary)", medium:"var(--clr-warning)", high:"var(--clr-danger)", critical:"#7b241c" };
+    const rc = riskColors[data.riskLevel] || "var(--clr-primary)";
+
+    let html = "";
+
+    // Risk dial + summary
+    html += `<div class="card mb-4">
+      <div style="display:flex;gap:20px;align-items:center;">
+        <div class="risk-dial ${riskClass}">
+          <div class="risk-num">${data.riskScore || "—"}</div>
+          <div class="risk-lbl">${data.riskLevel || "low"}</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-weight:700;font-size:1rem;color:${rc};margin-bottom:6px;">${(data.riskLevel||"").toUpperCase()} RISK — ${data.trimester||""} trimester</div>
+          <p class="text-sm">${esc(data.summary||"")}</p>
+          ${data.nextANCDate ? `<div class="text-sm mt-2"><strong>Next ANC:</strong> ${esc(data.nextANCDate)}</div>` : ""}
+        </div>
+      </div>
+    </div>`;
+
+    // Referral decision
+    if (data.referralDecision?.refer) {
+      html += `<div class="alert alert-danger mb-4">
+        <span class="alert-icon">🏥</span>
+        <div>
+          <strong>REFER — ${esc(data.referralDecision.urgency||"")}</strong><br>
+          <span class="text-sm">Facility: ${esc(data.referralDecision.facility||"")} | Reason: ${esc(data.referralDecision.reason||"")}</span>
+        </div>
+      </div>`;
+    } else {
+      html += `<div class="alert alert-success mb-4">
+        <span class="alert-icon">✅</span>
+        <div><strong>No immediate referral needed</strong><br>
+        <span class="text-sm">Continue routine ANC monitoring</span></div>
+      </div>`;
+    }
+
+    // Danger signs
+    if (data.dangerSigns?.length) {
+      html += `<div class="card mb-4"><div class="card-header"><span>🚨</span><span class="card-title">Danger Signs Detected</span></div>`;
+      data.dangerSigns.forEach(d => {
+        html += `<div class="danger-sign-card">
+          <div style="font-weight:700;font-size:0.88rem;color:var(--clr-danger);">⚠️ ${esc(d.sign)}</div>
+          <div class="text-sm mt-1">${esc(d.meaning)}</div>
+          <div class="text-sm mt-1" style="color:var(--clr-primary-dk);font-weight:500;">→ ${esc(d.action)}</div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Findings table
+    if (data.findings?.length) {
+      html += `<div class="card mb-4"><div class="card-header"><span>🧪</span><span class="card-title">Clinical Findings</span></div>`;
+      data.findings.forEach(f => {
+        html += `<div class="finding-row">
+          <div style="flex:1;">
+            <div style="font-weight:600;font-size:0.88rem;">${esc(f.parameter)}</div>
+            <div class="text-sm text-muted">${esc(f.interpretation||"")}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-weight:700;font-size:0.9rem;">${esc(f.value||"")}</div>
+            <span class="finding-status status-${f.status||"normal"}">${f.status||"normal"}</span>
+          </div>
+        </div>`;
+      });
+      html += `</div>`;
+    }
+
+    // Immediate actions
+    if (data.immediateActions?.length) {
+      html += `<div class="card mb-4"><div class="card-header"><span>⚡</span><span class="card-title">Immediate Actions</span></div><ol style="padding-left:20px;">`;
+      data.immediateActions.forEach(a => { html += `<li style="padding:4px 0;font-size:0.88rem;">${esc(a)}</li>`; });
+      html += `</ol></div>`;
+    }
+
+    // Nutrition
+    if (data.nutritionAdvice) {
+      html += `<div class="card mb-4" style="background:var(--clr-primary-lt);border-color:var(--clr-primary);">
+        <div class="card-header"><span>🥗</span><span class="card-title" style="color:var(--clr-primary-dk);">Nutrition Advice</span></div>
+        <p class="text-sm">${esc(data.nutritionAdvice)}</p>
+      </div>`;
+    }
+
+    // Govt schemes
+    if (data.govtSchemes?.length) {
+      html += `<div class="card"><div class="card-header"><span>📋</span><span class="card-title">Applicable Government Schemes</span></div><div>`;
+      data.govtSchemes.forEach(s => { html += `<span class="scheme-chip">📋 ${esc(s)}</span>`; });
+      html += `</div></div>`;
+    }
+
+    document.getElementById("resultsPanel").innerHTML = html;
+  } catch(e) {
+    document.getElementById("resultsPanel").innerHTML = `<div class="alert alert-danger"><span class="alert-icon">❌</span><div>${esc(e.message)}</div></div>`;
+  } finally {
+    btn.disabled = false; btn.innerHTML = "🤱 Run ANC Risk Assessment";
+  }
+});
+
+function esc(s="") { const d=document.createElement("div"); d.textContent=String(s); return d.innerHTML; }
+</script>
+</body>
+</html>

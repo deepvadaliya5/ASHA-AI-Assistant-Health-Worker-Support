@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Differential Diagnosis — ASHA AI</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .confidence-bar { height: 10px; border-radius: 5px; background: var(--clr-border); overflow: hidden; margin-top: 6px; }
+    .confidence-fill { height: 100%; border-radius: 5px; transition: width 1s cubic-bezier(.4,0,.2,1); }
+    .urgency-badge {
+      padding: 3px 10px; border-radius: 100px; font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+    }
+    .urgency-critical { background: #fdecea; color: #c0392b; }
+    .urgency-high     { background: #fef9e7; color: #d68910; }
+    .urgency-medium   { background: #e3f2fd; color: #1565c0; }
+    .urgency-low      { background: #e8f5ee; color: #1a6b3c; }
+    .diagnosis-card {
+      border: 1.5px solid var(--clr-border); border-radius: var(--radius-md);
+      padding: 16px; margin-bottom: 12px; background: var(--clr-surface);
+      animation: msgIn 0.3s ease forwards;
+      opacity: 0;
+    }
+    .diagnosis-card:nth-child(1) { animation-delay: 0.05s; }
+    .diagnosis-card:nth-child(2) { animation-delay: 0.1s; }
+    .diagnosis-card:nth-child(3) { animation-delay: 0.15s; }
+    .diagnosis-card:nth-child(4) { animation-delay: 0.2s; }
+    .diagnosis-card:nth-child(5) { animation-delay: 0.25s; }
+    .diagnosis-card:nth-child(6) { animation-delay: 0.3s; }
+    @keyframes msgIn { to { opacity: 1; transform: translateY(0); } from { opacity: 0; transform: translateY(10px); } }
+    .top-diagnosis { border-color: var(--clr-primary); border-width: 2px; }
+    .icd-code { font-family: monospace; font-size: 0.72rem; background: var(--clr-surface-2); padding: 2px 6px; border-radius: 4px; color: var(--clr-text-3); }
+    .red-flag-item { display: flex; align-items: center; gap: 8px; padding: 6px 10px; background: var(--clr-danger-lt); border-radius: var(--radius-sm); margin-bottom: 6px; font-size: 0.85rem; color: #7b241c; }
+    .test-chip { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: var(--clr-info-lt); color: var(--clr-info); border-radius: 100px; font-size: 0.78rem; font-weight: 500; margin: 3px; }
+  </style>
+</head>
+<body>
+<nav class="navbar">
+  <div class="navbar-brand">
+    <div class="logo-icon">⚕️</div>
+    <div>
+      <span>ASHA AI Assistant</span>
+      <span class="navbar-subtitle">Differential Diagnosis</span>
+    </div>
+  </div>
+  <div class="navbar-actions">
+    <button id="langToggleBtn" class="nav-btn">हिंदी</button>
+    <a href="index.html" class="nav-link-btn">← Home</a>
+    <a href="chat.html" class="nav-link-btn">💬 Chat</a>
+  </div>
+</nav>
+
+<div class="page-wrapper" style="max-width: 900px;">
+  <div class="page-header">
+    <h1 class="page-title">🩺 Differential Diagnosis</h1>
+    <p class="page-subtitle">Enter patient symptoms to get ranked possible conditions with confidence scores</p>
+  </div>
+
+  <div class="grid-2">
+    <!-- Input Panel -->
+    <div>
+      <div class="card mb-4">
+        <div class="card-header"><span>👤</span><span class="card-title">Patient Details</span></div>
+        <div class="form-group">
+          <label class="form-label">Age</label>
+          <input type="number" id="ageInput" class="form-control" placeholder="e.g. 35" min="0" max="120"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gender</label>
+          <select id="genderInput" class="form-control">
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Child (under 12)">Child (under 12)</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Duration of Symptoms</label>
+          <input type="text" id="durationInput" class="form-control" placeholder="e.g. 3 days, 2 weeks"/>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header"><span>🌡️</span><span class="card-title">Symptoms</span></div>
+        <div class="tag-container" id="tagContainer" onclick="document.getElementById('symInput').focus()">
+          <input id="symInput" placeholder="Type symptom + Enter" style="border:none;outline:none;flex:1;min-width:120px;font-size:0.88rem;font-family:inherit;background:transparent;"/>
+        </div>
+        <div class="symptom-pills mt-2" id="pillContainer"></div>
+      </div>
+
+      <button class="btn btn-primary btn-lg w-full" id="diagnoseBtn">
+        🔬 Run Differential Diagnosis
+      </button>
+    </div>
+
+    <!-- Results Panel -->
+    <div>
+      <div id="resultsPlaceholder" class="card" style="text-align:center; padding: 40px 20px; color: var(--clr-text-3);">
+        <div style="font-size:2.5rem; margin-bottom:12px;">🔬</div>
+        <div style="font-weight:600; margin-bottom:6px;">No diagnosis yet</div>
+        <div class="text-sm">Fill in symptoms and click Analyze</div>
+      </div>
+      <div id="resultsPanel" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { getLang, toggleLang, applyLang } from "./js/lang.js";
+applyLang(getLang());
+document.getElementById("langToggleBtn").textContent = getLang() === "hi" ? "English" : "हिंदी";
+document.getElementById("langToggleBtn").addEventListener("click", () => {
+  const l = toggleLang();
+  document.getElementById("langToggleBtn").textContent = l === "hi" ? "English" : "हिंदी";
+});
+
+const COMMON = ["Fever","Cough","Headache","Body ache","Vomiting","Diarrhea","Chills","Fatigue",
+  "Skin rash","Breathlessness","Abdominal pain","Jaundice","Chest pain","Swollen joints"];
+
+let selected = new Set();
+
+// Render pills
+const pillContainer = document.getElementById("pillContainer");
+function renderPills() {
+  pillContainer.innerHTML = "";
+  COMMON.forEach(s => {
+    const p = document.createElement("button");
+    p.className = "pill" + (selected.has(s) ? " selected" : "");
+    p.textContent = s;
+    p.onclick = () => { selected.has(s) ? selected.delete(s) : selected.add(s); renderPills(); syncTags(); };
+    pillContainer.appendChild(p);
+  });
+}
+
+// Sync tags display
+function syncTags() {
+  document.querySelectorAll(".symptom-tag[data-val]").forEach(t => t.remove());
+  const input = document.getElementById("symInput");
+  selected.forEach(s => {
+    const tag = document.createElement("div");
+    tag.className = "symptom-tag"; tag.dataset.val = s;
+    tag.innerHTML = `${esc(s)} <button class="tag-remove" onclick="removeTag('${s}')">×</button>`;
+    document.getElementById("tagContainer").insertBefore(tag, input);
+  });
+}
+
+window.removeTag = (s) => { selected.delete(s); renderPills(); syncTags(); };
+
+document.getElementById("symInput").addEventListener("keydown", e => {
+  if (e.key === "Enter" && e.target.value.trim()) {
+    selected.add(e.target.value.trim()); e.target.value = "";
+    renderPills(); syncTags();
+  }
+});
+
+renderPills();
+
+// Confidence color
+function confColor(n) {
+  if (n >= 70) return "#c0392b";
+  if (n >= 45) return "#d68910";
+  return "#1a6b3c";
+}
+
+// Diagnose
+document.getElementById("diagnoseBtn").addEventListener("click", async () => {
+  if (!selected.size) { alert("Please add at least one symptom."); return; }
+  const btn = document.getElementById("diagnoseBtn");
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Analyzing...';
+
+  document.getElementById("resultsPlaceholder").style.display = "none";
+  document.getElementById("resultsPanel").style.display = "block";
+  document.getElementById("resultsPanel").innerHTML = `<div style="text-align:center;padding:40px;">
+    <div class="spinner" style="width:36px;height:36px;margin:0 auto 16px;"></div>
+    <p class="text-muted">Running differential diagnosis...</p></div>`;
+
+  try {
+    const rawText = await fetch("/api/diagnose", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({
+        symptoms: [...selected],
+        age: document.getElementById("ageInput").value,
+        gender: document.getElementById("genderInput").value,
+        duration: document.getElementById("durationInput").value,
+        language: getLang()
+      })
+    }).then(r => r.text());
+
+    const data = JSON.parse(rawText);
+    if (data.error) throw new Error(data.error);
+
+    let html = "";
+
+    // Summary banner
+    const ref = data.referralNeeded;
+    html += `<div class="alert ${ref ? "alert-danger" : "alert-success"} mb-4">
+      <span class="alert-icon">${ref ? "🏥" : "✅"}</span>
+      <div><strong>${ref ? "Referral Recommended" : "Home Management Possible"}</strong><br>
+      <span class="text-sm">${esc(data.summary || "")}</span></div></div>`;
+
+    // Diagnoses
+    html += `<div style="margin-bottom:8px;font-weight:700;font-size:0.85rem;color:var(--clr-text-2);">RANKED CONDITIONS</div>`;
+    (data.diagnoses || []).forEach((d, i) => {
+      const isTop = i === 0;
+      html += `<div class="diagnosis-card ${isTop ? "top-diagnosis" : ""}">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+          <div>
+            <span style="font-weight:700;font-size:0.95rem;">${i+1}. ${esc(d.condition)}</span>
+            ${d.icdCode ? `<span class="icd-code ml-2">${esc(d.icdCode)}</span>` : ""}
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <span class="urgency-badge urgency-${d.urgency||"low"}">${d.urgency||"low"}</span>
+            <span style="font-weight:800;color:${confColor(d.confidence)};font-size:1rem;">${d.confidence}%</span>
+          </div>
+        </div>
+        <div class="confidence-bar"><div class="confidence-fill" style="width:${d.confidence}%;background:${confColor(d.confidence)};"></div></div>
+        <p class="text-sm mt-2" style="color:var(--clr-text-2);">${esc(d.reasoning||"")}</p>
+        ${d.action ? `<div style="margin-top:8px;padding:8px 10px;background:var(--clr-primary-lt);border-radius:var(--radius-sm);font-size:0.82rem;color:var(--clr-primary-dk);">
+          <strong>Action:</strong> ${esc(d.action)}</div>` : ""}
+      </div>`;
+    });
+
+    // Red flags
+    if (data.redFlags?.length) {
+      html += `<div class="card mt-4"><div class="card-header"><span>🚨</span><span class="card-title">Red Flag Signs</span></div>`;
+      data.redFlags.forEach(f => { html += `<div class="red-flag-item">⚠️ ${esc(f)}</div>`; });
+      html += `</div>`;
+    }
+
+    // Tests
+    if (data.recommendedTests?.length) {
+      html += `<div class="card mt-4"><div class="card-header"><span>🧪</span><span class="card-title">Recommended Tests</span></div><div>`;
+      data.recommendedTests.forEach(t => { html += `<span class="test-chip">🧪 ${esc(t)}</span>`; });
+      html += `</div></div>`;
+    }
+
+    document.getElementById("resultsPanel").innerHTML = html;
+  } catch(e) {
+    document.getElementById("resultsPanel").innerHTML = `<div class="alert alert-danger"><span class="alert-icon">❌</span><div>${esc(e.message)}</div></div>`;
+  } finally {
+    btn.disabled = false; btn.innerHTML = "🔬 Run Differential Diagnosis";
+  }
+});
+
+function esc(s="") { const d=document.createElement("div"); d.textContent=s; return d.innerHTML; }
+</script>
+</body>
+</html>

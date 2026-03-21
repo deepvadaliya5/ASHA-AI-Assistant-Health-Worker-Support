@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Report Symptoms — ASHA AI</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="navbar-brand">
+    <div class="logo-icon">⚕️</div>
+    <div>
+      <span data-i18n="navTitle">ASHA AI Assistant</span>
+      <span class="navbar-subtitle" data-i18n="navSubtitle">Health Worker Support System</span>
+    </div>
+  </div>
+  <div class="navbar-actions">
+    <button id="langToggleBtn" class="nav-btn">हिंदी</button>
+    <a href="index.html" class="nav-link-btn">← Home</a>
+    <a href="analytics.html" class="nav-link-btn">📊 Analytics</a>
+  </div>
+</nav>
+
+<div class="page-wrapper" style="max-width: 760px;">
+  <div class="page-header">
+    <h1 class="page-title" data-i18n="symptomsTitle">Report Symptoms</h1>
+    <p class="page-subtitle" data-i18n="symptomsSubtitle">Enter patient symptoms to get AI-powered guidance</p>
+  </div>
+
+  <!-- ─── Fever Alert Banner ─────────────────────────────── -->
+  <div id="feverAlertBanner" class="hidden mb-4">
+    <div class="alert alert-danger">
+      <span class="alert-icon">🌡️</span>
+      <div id="feverAlertText"></div>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- ─── Left Column ──────────────────────────────────── -->
+    <div>
+      <!-- Patient ID -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span>👤</span>
+          <span class="card-title" data-i18n="patientInfo">Patient Information</span>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <label class="form-label" data-i18n="patientIdLabel">Patient ID (optional)</label>
+          <input
+            type="text"
+            id="patientIdInput"
+            class="form-control"
+            placeholder="e.g. ASHA-2024-001"
+            data-i18n-placeholder="patientIdPlaceholder"
+          />
+          <p class="text-xs text-muted mt-2">Used to track follow-ups and fever alerts across visits.</p>
+        </div>
+      </div>
+
+      <!-- Symptom Tags Input -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span>🩺</span>
+          <span class="card-title" data-i18n="symptomsLabel">Select or Type Symptoms</span>
+        </div>
+
+        <div class="tag-container" id="tagContainer" onclick="document.getElementById('symptomInput').focus()">
+          <input
+            type="text"
+            id="symptomInput"
+            placeholder="Type symptom and press Enter"
+            data-i18n-placeholder="symptomsInputPlaceholder"
+            style="border: none; outline: none; flex: 1; min-width: 140px; font-size: 0.88rem; font-family: inherit; background: transparent;"
+          />
+        </div>
+
+        <p class="text-xs text-muted mt-2" data-i18n="commonSymptoms">Quick Select:</p>
+        <div class="symptom-pills mt-2" id="symptomPills"></div>
+      </div>
+
+      <!-- Additional Notes -->
+      <div class="card">
+        <div class="card-header">
+          <span>📝</span>
+          <span class="card-title" data-i18n="additionalNotes">Additional Notes</span>
+        </div>
+        <textarea
+          id="notesInput"
+          class="form-control"
+          rows="4"
+          placeholder="Describe the patient's condition, duration, severity..."
+          data-i18n-placeholder="notesPlaceholder"
+        ></textarea>
+      </div>
+    </div>
+
+    <!-- ─── Right Column ─────────────────────────────────── -->
+    <div>
+      <!-- Selected Symptoms Summary -->
+      <div class="card mb-4">
+        <div class="card-header">
+          <span>📋</span>
+          <span class="card-title">Selected Symptoms</span>
+        </div>
+        <div id="selectedSymptomsList" style="min-height: 60px;">
+          <p class="text-sm text-muted">No symptoms selected yet.</p>
+        </div>
+      </div>
+
+      <!-- Risk Indicator -->
+      <div class="card mb-4" id="riskCard" style="display: none;">
+        <div class="card-header">
+          <span>⚠️</span>
+          <span class="card-title">Risk Assessment</span>
+        </div>
+        <div id="riskIndicator"></div>
+      </div>
+
+      <!-- Submit -->
+      <button class="btn btn-primary btn-lg w-full" id="analyzeBtn">
+        🔍 <span data-i18n="analyzeBtn">Analyze Symptoms</span>
+      </button>
+      <p class="text-xs text-muted mt-2" style="text-align: center;">
+        AI will mine live health research and provide immediate guidance.
+      </p>
+
+      <!-- Quick Tips -->
+      <div class="card mt-4" style="background: var(--clr-primary-lt); border-color: var(--clr-primary)20;">
+        <div style="font-size: 0.85rem; color: var(--clr-primary-dk);">
+          <div style="font-weight: 700; margin-bottom: 8px;">💡 Tips for ASHA Workers</div>
+          <ul style="list-style: none; padding: 0;">
+            <li style="padding: 3px 0 3px 16px; position: relative; font-size:0.82rem;">
+              <span style="position:absolute;left:0;">•</span>
+              Select all visible symptoms for accurate guidance
+            </li>
+            <li style="padding: 3px 0 3px 16px; position: relative; font-size:0.82rem;">
+              <span style="position:absolute;left:0;">•</span>
+              Add Patient ID to track recurring cases
+            </li>
+            <li style="padding: 3px 0 3px 16px; position: relative; font-size:0.82rem;">
+              <span style="position:absolute;left:0;">•</span>
+              Use voice input in noisy environments
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { getLang, toggleLang, applyLang, t } from "./js/lang.js";
+  import { logEvent } from "./js/logger.js";
+
+  // ─── State ──────────────────────────────────────────────
+  let selectedSymptoms = new Set();
+
+  const HIGH_RISK = ["chest pain", "breathlessness", "unconscious", "seizure", "bleeding", "not breathing"];
+  const MEDIUM_RISK = ["fever", "vomiting", "diarrhea", "jaundice", "swollen"];
+
+  const commonSymptoms = [
+    "Fever", "Cough", "Diarrhea", "Vomiting", "Headache",
+    "Body ache", "Skin rash", "Breathlessness", "Chest pain",
+    "Abdominal pain", "Jaundice", "Swollen limbs", "Fatigue",
+    "Loss of appetite", "Malaria symptoms", "Anemia signs",
+  ];
+
+  // ─── Render Pills ────────────────────────────────────────
+  function renderPills() {
+    const container = document.getElementById("symptomPills");
+    container.innerHTML = "";
+    commonSymptoms.forEach((s) => {
+      const pill = document.createElement("button");
+      pill.className = "pill" + (selectedSymptoms.has(s) ? " selected" : "");
+      pill.textContent = s;
+      pill.addEventListener("click", () => toggleSymptom(s));
+      container.appendChild(pill);
+    });
+  }
+
+  function toggleSymptom(symptom) {
+    if (selectedSymptoms.has(symptom)) {
+      selectedSymptoms.delete(symptom);
+    } else {
+      selectedSymptoms.add(symptom);
+    }
+    renderPills();
+    updateSelectedList();
+    updateRisk();
+  }
+
+  function addCustomSymptom(symptom) {
+    const s = symptom.trim();
+    if (!s) return;
+    selectedSymptoms.add(s);
+    updateSelectedList();
+    updateRisk();
+
+    // Add as tag in input area
+    const tag = document.createElement("div");
+    tag.className = "symptom-tag";
+    tag.dataset.value = s;
+    tag.innerHTML = `${escHtml(s)} <button class="tag-remove" aria-label="Remove">×</button>`;
+    tag.querySelector(".tag-remove").addEventListener("click", () => {
+      selectedSymptoms.delete(s);
+      tag.remove();
+      updateSelectedList();
+      updateRisk();
+    });
+    document.getElementById("tagContainer").insertBefore(
+      tag, document.getElementById("symptomInput")
+    );
+  }
+
+  function updateSelectedList() {
+    const el = document.getElementById("selectedSymptomsList");
+    const arr = [...selectedSymptoms];
+    if (!arr.length) {
+      el.innerHTML = `<p class="text-sm text-muted">No symptoms selected yet.</p>`;
+      return;
+    }
+    el.innerHTML = arr.map((s) => `
+      <span class="symptom-tag" style="display:inline-flex; margin: 3px;">
+        ${escHtml(s)}
+      </span>`).join("");
+  }
+
+  function updateRisk() {
+    const card = document.getElementById("riskCard");
+    const el   = document.getElementById("riskIndicator");
+    const arr  = [...selectedSymptoms].map((s) => s.toLowerCase());
+
+    if (!arr.length) { card.style.display = "none"; return; }
+    card.style.display = "block";
+
+    const isHigh   = arr.some((s) => HIGH_RISK.some((r) => s.includes(r)));
+    const isMedium = arr.some((s) => MEDIUM_RISK.some((r) => s.includes(r)));
+
+    const [level, color, msg] = isHigh
+      ? ["HIGH RISK", "var(--clr-danger)", "🚨 Refer to PHC/hospital immediately!"]
+      : isMedium
+        ? ["MODERATE", "var(--clr-warning)", "⚠️ Monitor closely. Seek care if worsens."]
+        : ["LOW", "var(--clr-primary)", "✅ Continue monitoring. Provide home care guidance."];
+
+    el.innerHTML = `
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0;"></div>
+        <div>
+          <div style="font-weight:700;color:${color};font-size:0.9rem;">${level}</div>
+          <div class="text-sm" style="margin-top:2px;">${msg}</div>
+        </div>
+      </div>`;
+  }
+
+  // ─── Symptom Input ──────────────────────────────────────
+  const symptomInput = document.getElementById("symptomInput");
+  symptomInput.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === ",") && symptomInput.value.trim()) {
+      e.preventDefault();
+      addCustomSymptom(symptomInput.value);
+      symptomInput.value = "";
+    } else if (e.key === "Backspace" && !symptomInput.value) {
+      const tags = document.querySelectorAll(".symptom-tag[data-value]");
+      if (tags.length) {
+        const last = tags[tags.length - 1];
+        selectedSymptoms.delete(last.dataset.value);
+        last.remove();
+        updateSelectedList();
+      }
+    }
+  });
+
+  // ─── Analyze Button ─────────────────────────────────────
+  document.getElementById("analyzeBtn").addEventListener("click", () => {
+    const symptoms = [...selectedSymptoms];
+    const patientId = document.getElementById("patientIdInput").value.trim();
+    const notes = document.getElementById("notesInput").value.trim();
+
+    if (!symptoms.length && !notes) {
+      alert(getLang() === "hi"
+        ? "कृपया कम से कम एक लक्षण दर्ज करें।"
+        : "Please select or enter at least one symptom.");
+      return;
+    }
+
+    const queryParts = [];
+    if (symptoms.length) queryParts.push(`Patient has: ${symptoms.join(", ")}.`);
+    if (notes) queryParts.push(notes);
+
+    const state = {
+      symptoms,
+      patientId: patientId || null,
+      query: queryParts.join(" "),
+    };
+    sessionStorage.setItem("asha_query_state", JSON.stringify(state));
+    logEvent("symptoms_submitted", { symptoms, patientId });
+    window.location.href = "chat.html";
+  });
+
+  // ─── Lang Toggle ────────────────────────────────────────
+  document.getElementById("langToggleBtn").addEventListener("click", () => {
+    const lang = toggleLang();
+    document.getElementById("langToggleBtn").textContent = lang === "hi" ? "English" : "हिंदी";
+  });
+
+  // ─── Init ────────────────────────────────────────────────
+  applyLang(getLang());
+  renderPills();
+
+  function escHtml(str) {
+    const d = document.createElement("div");
+    d.textContent = str;
+    return d.innerHTML;
+  }
+</script>
+</body>
+</html>
