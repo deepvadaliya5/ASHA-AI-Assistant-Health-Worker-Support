@@ -1,19 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Consultation — ASHA AI</title>
-  <link rel="stylesheet" href="css/style.css" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>AI Consultation — ASHA AI v4.0</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <style>
+    .image-upload-btn {
+      width:44px;height:44px;border-radius:50%;border:1.5px solid var(--clr-border);
+      background:var(--clr-surface);color:var(--clr-text-2);font-size:1rem;
+      display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;cursor:pointer;
+    }
+    .image-upload-btn:hover{border-color:var(--clr-accent);color:var(--clr-accent);}
+    .version-badge{
+      display:inline-flex;align-items:center;gap:4px;padding:2px 8px;
+      border-radius:100px;background:var(--clr-primary-lt);color:var(--clr-primary);
+      font-size:0.68rem;font-weight:700;letter-spacing:.3px;margin-left:6px;
+    }
+    #triagePanel, #followupsPanel { transition: all .3s; }
+  </style>
 </head>
 <body>
-
 <nav class="navbar">
   <div class="navbar-brand">
     <div class="logo-icon">⚕️</div>
     <div>
-      <span data-i18n="navTitle">ASHA AI Assistant</span>
-      <span class="navbar-subtitle" data-i18n="navSubtitle">Health Worker Support System</span>
+      <span>ASHA AI Assistant</span>
+      <span class="version-badge">v4.0</span>
+      <span class="navbar-subtitle">16 GenAI Features Active</span>
     </div>
   </div>
   <div class="navbar-actions">
@@ -26,153 +40,85 @@
   </div>
 </nav>
 
-<div class="page-wrapper" style="padding-top: 20px; height: calc(100vh - 64px); display: flex; flex-direction: column;">
-
-  <!-- Fever Alert (shown if active) -->
+<div class="page-wrapper" style="padding-top:16px;height:calc(100vh - 64px);display:flex;flex-direction:column;">
   <div id="feverAlert" class="hidden mb-4"></div>
+  <div class="chat-layout" style="flex:1;min-height:0;">
 
-  <div class="chat-layout" style="flex: 1; min-height: 0;">
-
-    <!-- ─── Main Chat Area ─────────────────────────────── -->
+    <!-- Chat Main -->
     <div class="chat-main">
       <div class="chat-header">
         <div class="flex items-center gap-2">
-          <div style="width: 8px; height: 8px; border-radius: 50%; background: #22c55e;"></div>
-          <span style="font-size: 0.85rem; font-weight: 600;">ASHA AI — Live</span>
-          <span class="text-xs text-muted" id="miningStatus">Dynamic Web Mining Active</span>
+          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;"></div>
+          <span style="font-size:0.85rem;font-weight:600;">ASHA AI — Live</span>
+          <span class="text-xs text-muted" id="miningStatus">Web Mining + Semantic Ranking Active</span>
         </div>
         <div class="flex gap-2">
-          <button id="speakLastBtn" class="btn btn-ghost btn-sm" title="Read last response aloud">
-            🔊 Read Aloud
-          </button>
+          <button id="speakLastBtn" class="btn btn-ghost btn-sm">🔊 Read Aloud</button>
           <button id="clearChatBtn" class="btn btn-ghost btn-sm">🗑 Clear</button>
         </div>
       </div>
 
-      <!-- Messages -->
       <div class="chat-messages" id="chatMessages"></div>
 
-      <!-- Input Area -->
       <div class="chat-input-area">
-        <div class="chat-input-row">
-          <button class="voice-btn" id="voiceBtn" title="Voice Input">🎤</button>
-          <textarea
-            id="chatInput"
-            class="chat-input"
-            placeholder="Ask about symptoms, treatments, government schemes..."
-            data-i18n-placeholder="chatPlaceholder"
-            rows="1"
-          ></textarea>
-          <button class="send-btn" id="sendBtn" title="Send">➤</button>
+        <!-- Action buttons row -->
+        <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap;">
+          <button id="treatmentPlanBtn" class="btn btn-outline btn-sm">📋 Treatment Plan</button>
+          <button id="outbreakBtn" class="btn btn-outline btn-sm">🦠 Check Outbreak</button>
         </div>
-        <p class="text-xs text-muted mt-2" style="text-align: center;">
-          Only health-related queries are processed. Queries are mined against live news.
+        <div class="chat-input-row">
+          <button class="voice-btn" id="voiceBtn" title="Voice Input (auto locale fallback)">🎤</button>
+          <button class="image-upload-btn" id="imageUploadBtn" title="Upload photo for Gemini Vision analysis">📸</button>
+          <input type="file" id="imageFileInput" accept="image/*" style="display:none;"/>
+          <textarea id="chatInput" class="chat-input"
+            placeholder="Ask about symptoms, treatments, schemes... or upload a photo 📸"
+            rows="1"></textarea>
+          <button class="send-btn" id="sendBtn">➤</button>
+        </div>
+        <p class="text-xs text-muted mt-2" style="text-align:center;">
+          Multi-turn memory active · Triage scoring · Smart follow-ups · Photo analysis
         </p>
       </div>
     </div>
 
-    <!-- ─── Sidebar ────────────────────────────────────── -->
+    <!-- Sidebar -->
     <div class="chat-sidebar">
-
       <!-- Patient Info -->
       <div class="card">
-        <div class="card-header">
-          <span>👤</span>
-          <span class="card-title" data-i18n="patientInfo">Patient Information</span>
-        </div>
-        <div id="patientInfo">
-          <p class="text-sm text-muted">No patient ID set.</p>
-        </div>
+        <div class="card-header"><span>👤</span><span class="card-title">Patient Information</span></div>
+        <div id="patientInfo"><p class="text-sm text-muted">No patient ID set.</p></div>
       </div>
+
+      <!-- AI Triage Score (new) -->
+      <div id="triagePanel" class="hidden"></div>
+
+      <!-- Smart Follow-ups (new) -->
+      <div id="followupsPanel" class="hidden"></div>
 
       <!-- Research Sources -->
-      <div class="card" style="flex: 1;">
-        <div class="card-header">
-          <span>🔬</span>
-          <span class="card-title" data-i18n="sourcesTitle">Research Sources</span>
-          <span class="text-xs text-muted" style="margin-left: auto;">Live Mined</span>
-        </div>
-        <div id="sourcesContainer">
-          <p class="text-sm text-muted" data-i18n="noSources">
-            No web sources mined for this query.
-          </p>
-        </div>
-      </div>
-
-      <!-- Quick Actions -->
       <div class="card">
         <div class="card-header">
-          <span>⚡</span>
-          <span class="card-title">Quick Queries</span>
+          <span>🔬</span>
+          <span class="card-title">Research Sources</span>
+          <span class="text-xs text-muted" style="margin-left:auto;">Live Mined</span>
         </div>
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-          <button class="btn btn-ghost btn-sm" onclick="quickQuery('Signs of severe malaria requiring referral')">
-            🦟 Malaria Referral Signs
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="quickQuery('Emergency signs during pregnancy')">
-            🤱 Pregnancy Emergencies
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="quickQuery('Child vaccination schedule India 2024')">
-            💉 Vaccination Schedule
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="quickQuery('TB symptoms and DOTS treatment')">
-            🫁 TB & DOTS Protocol
-          </button>
-          <button class="btn btn-ghost btn-sm" onclick="quickQuery('Oral Rehydration Therapy preparation')">
-            💧 ORS Preparation
-          </button>
+        <div id="sourcesContainer"><p class="text-sm text-muted">No sources yet.</p></div>
+      </div>
+
+      <!-- Quick Queries -->
+      <div class="card">
+        <div class="card-header"><span>⚡</span><span class="card-title">Quick Queries</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <button class="btn btn-ghost btn-sm" onclick="window.sendQuickQuery('Signs of severe malaria requiring referral')">🦟 Malaria referral signs</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.sendQuickQuery('Emergency signs during pregnancy')">🤱 Pregnancy emergencies</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.sendQuickQuery('Child vaccination schedule India 2024')">💉 Vaccination schedule</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.sendQuickQuery('TB symptoms and DOTS treatment protocol')">🫁 TB & DOTS protocol</button>
+          <button class="btn btn-ghost btn-sm" onclick="window.sendQuickQuery('How to prepare Oral Rehydration Solution at home')">💧 ORS preparation</button>
         </div>
       </div>
     </div>
   </div>
 </div>
-
-<script type="module">
-  import { getLang, toggleLang } from "./js/lang.js";
-  import { speak, stopSpeaking, isSpeaking } from "./js/voice.js";
-
-  // Lang toggle
-  const langBtn = document.getElementById("langToggleBtn");
-  langBtn.textContent = getLang() === "hi" ? "English" : "हिंदी";
-  langBtn.addEventListener("click", () => {
-    const lang = toggleLang();
-    langBtn.textContent = lang === "hi" ? "English" : "हिंदी";
-  });
-
-  // Speak last response
-  document.getElementById("speakLastBtn").addEventListener("click", () => {
-    const btn = document.getElementById("speakLastBtn");
-    if (isSpeaking()) {
-      stopSpeaking();
-      btn.textContent = "🔊 Read Aloud";
-      return;
-    }
-    const msgs = document.querySelectorAll(".message.assistant .msg-bubble");
-    const last = msgs[msgs.length - 1];
-    if (last) {
-      speak(last.innerText, () => { btn.textContent = "🔊 Read Aloud"; });
-      btn.textContent = "⏹ Stop";
-    }
-  });
-
-  // Clear chat
-  document.getElementById("clearChatBtn").addEventListener("click", () => {
-    if (confirm("Clear chat history?")) {
-      document.getElementById("chatMessages").innerHTML = "";
-    }
-  });
-</script>
-
-<!-- Quick query helper must be global -->
-<script>
-  function quickQuery(text) {
-    const input = document.getElementById("chatInput");
-    if (input) {
-      input.value = text;
-      input.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true }));
-    }
-  }
-</script>
 
 <script type="module" src="js/chat.js"></script>
 </body>
