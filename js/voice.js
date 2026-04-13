@@ -4,8 +4,8 @@
  * Mode A: Web Speech API (works on HTTPS or Chrome with flag enabled)
  *         Tries locale chain: en-IN → en-US → en-GB → en
  *
- * Mode B: MediaRecorder + Gemini Transcription fallback
- *         Records audio → sends base64 to /api/transcribe → Gemini returns text
+ * Mode B: MediaRecorder + Whisper transcription fallback
+ *         Records audio → sends base64 to /api/transcribe → OpenAI returns text
  *         Works on HTTP localhost without any Chrome flags
  */
 
@@ -16,7 +16,7 @@ const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecogni
 let recognizer    = null;
 let isListening   = false;
 let localeIndex   = 0;
-let useGeminiFallback = false; // switches to true after Web Speech keeps failing
+let useServerTranscribeFallback = false; // after Web Speech keeps failing
 
 // ─── Locale fallback chain ────────────────────────────────────────────────────
 const LOCALE_CHAIN = {
@@ -25,13 +25,13 @@ const LOCALE_CHAIN = {
 };
 
 export function isVoiceSupported() {
-  // Always true — we have Gemini fallback even if Web Speech unsupported
+  // Always true — server transcription fallback even if Web Speech unsupported
   return !!(SpeechRecognition || navigator.mediaDevices?.getUserMedia);
 }
 
 export function startListening(onResult, onError, onEnd) {
-  if (useGeminiFallback || !SpeechRecognition) {
-    _startGeminiRecorder(onResult, onError, onEnd);
+  if (useServerTranscribeFallback || !SpeechRecognition) {
+    _startMediaRecorderTranscribe(onResult, onError, onEnd);
     return;
   }
   _startWebSpeech(onResult, onError, onEnd, localeIndex);
@@ -79,10 +79,10 @@ function _startWebSpeech(onResult, onError, onEnd, idx) {
         return;
       }
 
-      // All Web Speech locales failed — switch permanently to Gemini fallback
-      console.log("[Voice] All locales failed — switching to Gemini transcription");
-      useGeminiFallback = true;
-      _startGeminiRecorder(onResult, onError, onEnd);
+      // All Web Speech locales failed — switch permanently to server transcription
+      console.log("[Voice] All locales failed — switching to server transcription");
+      useServerTranscribeFallback = true;
+      _startMediaRecorderTranscribe(onResult, onError, onEnd);
       return;
     }
 
@@ -91,12 +91,12 @@ function _startWebSpeech(onResult, onError, onEnd, idx) {
       "no-speech":           "No speech detected. Please speak clearly and try again.",
       "aborted":             "Voice cancelled.",
       "audio-capture":       "No microphone found. Please connect one.",
-      "service-not-allowed": "Voice service blocked. Using Gemini transcription instead.",
+      "service-not-allowed": "Voice service blocked. Using server transcription instead.",
     };
 
     if (event.error === "service-not-allowed") {
-      useGeminiFallback = true;
-      _startGeminiRecorder(onResult, onError, onEnd);
+      useServerTranscribeFallback = true;
+      _startMediaRecorderTranscribe(onResult, onError, onEnd);
       return;
     }
 
@@ -109,21 +109,14 @@ function _startWebSpeech(onResult, onError, onEnd, idx) {
   catch (e) { isListening = false; onError?.("Could not start voice: " + e.message); }
 }
 
-// ─── MODE B: MediaRecorder → Gemini Transcription ────────────────────────────
+// ─── MODE B: MediaRecorder → /api/transcribe (Whisper) ───────────────────────
 let mediaRecorder   = null;
 let audioChunks     = [];
 let isRecording     = false;
 let recordingStream = null;
-let _geminiOnResult = null;
-let _geminiOnError  = null;
-let _geminiOnEnd    = null;
 
-async function _startGeminiRecorder(onResult, onError, onEnd) {
-  if (isRecording) { _stopGeminiRecorder(); return; }
-
-  _geminiOnResult = onResult;
-  _geminiOnError  = onError;
-  _geminiOnEnd    = onEnd;
+async function _startMediaRecorderTranscribe(onResult, onError, onEnd) {
+  if (isRecording) { _stopMediaRecorder(); return; }
 
   try {
     recordingStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -161,7 +154,7 @@ async function _startGeminiRecorder(onResult, onError, onEnd) {
     const blob = new Blob(audioChunks, { type: mimeType });
 
     // Show "transcribing" state
-    onResult?.("⏳ Transcribing with Gemini AI...", false);
+    onResult?.("⏳ Transcribing audio...", false);
 
     try {
       const base64 = await _blobToBase64(blob);
@@ -183,7 +176,7 @@ async function _startGeminiRecorder(onResult, onError, onEnd) {
         onError?.("Could not transcribe audio. Please speak more clearly or type your query.");
       }
     } catch (e) {
-      console.error("[Gemini Transcribe]", e);
+      console.error("[Transcribe]", e);
       onError?.("Transcription failed: " + e.message + ". Please type your query.");
     }
 
@@ -203,7 +196,7 @@ async function _startGeminiRecorder(onResult, onError, onEnd) {
   }, 10000);
 }
 
-function _stopGeminiRecorder() {
+function _stopMediaRecorder() {
   if (mediaRecorder && isRecording) {
     mediaRecorder.stop();
     isRecording = false;
@@ -226,7 +219,7 @@ export function stopListening() {
     recognizer.stop();
     isListening = false;
   }
-  if (isRecording) _stopGeminiRecorder();
+  if (isRecording) _stopMediaRecorder();
 }
 
 export function getIsListening() { return isListening || isRecording; }
