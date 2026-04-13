@@ -79,7 +79,7 @@ ASHA AI Response:
 
 ### Prerequisites
 - **Node.js 18+** — [Download](https://nodejs.org)
-- **Gemini API Key** — [Get free key](https://aistudio.google.com/app/apikey)
+- **OpenAI API Key** — [API keys](https://platform.openai.com/api-keys)
 
 ### Install
 
@@ -97,7 +97,10 @@ cp .env.example .env
 
 Open `.env` and add your key:
 ```env
-GEMINI_API_KEY=your_actual_gemini_api_key_here
+OPENAI_API_KEY=your_openai_api_key_here
+# Optional overrides:
+# OPENAI_CHAT_MODEL=gpt-4o-mini
+# OPENAI_EMBED_MODEL=text-embedding-3-small
 ```
 
 ### Run
