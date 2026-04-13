@@ -1,7 +1,7 @@
 /**
  * chat.js v4.0 — Hackathon Edition
  * Uses: triage scoring, follow-up questions, conversation memory,
- * image upload (Gemini Vision), outbreak alerts, treatment plan
+ * image upload (vision), outbreak alerts, treatment plan
  */
 
 import { getLang, toggleLang, applyLang } from "./lang.js";
@@ -138,7 +138,14 @@ async function sendMessage(text) {
     });
 
     const rawText = await res.text();
-    if (!rawText?.trim()) throw new Error(`Empty response (HTTP ${res.status}). Check terminal.`);
+    if (!rawText?.trim()) {
+      if (res.status === 405) {
+        throw new Error(
+          "Server rejected POST (HTTP 405). Run the app with npm start and open http://localhost:3000 — do not use Live Server, file://, or another static host.",
+        );
+      }
+      throw new Error(`Empty response (HTTP ${res.status}). Check the terminal running node server.js.`);
+    }
 
     let data;
     try { data = JSON.parse(rawText); }
@@ -177,7 +184,7 @@ async function sendMessage(text) {
   }
 }
 
-// ─── Image Upload (Gemini Vision) ─────────────────────────────────────────────
+// ─── Image Upload (vision analysis) ───────────────────────────────────────────
 function setupImageUpload() {
   const btn = document.getElementById("imageUploadBtn");
   const input = document.getElementById("imageFileInput");
